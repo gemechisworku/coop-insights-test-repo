@@ -11,8 +11,6 @@ engine = create_engine(db_uri)
 
 with engine.connect() as con:
     rows = con.execute(text("""SELECT * FROM accounts"""))
-    # for row in rows:
-    #     print(row)
 
 def get_tables_description() -> str:
     description = """Allows you to perform SQL queries on the table. Beware that this tool's output is a string representation of the execution output.

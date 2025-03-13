@@ -1,13 +1,45 @@
-import ollama
 
+import ollama
+import os
+from fastapi import FastAPI
+from dotenv import load_dotenv
 from actions import add_numbers, sql_engine_tool
 from prompts import SYSTEM_PROMPT
 from SimplerLLM.tools.json_helpers import extract_json_from_text
 
-client = ollama.Client()
+from mistralai import Mistral
+
+load_dotenv()
+app = FastAPI()
+
+def get_response_mistral(query: str) -> str:
+    model = "mistral-large-latest"
+    api_key = os.getenv("MISTRAL_API_KEY")
+    model = "mistral-large-latest"
+
+    client = Mistral(api_key=api_key)
+
+    chat_response = client.chat.complete(
+        model= model,
+        messages = [
+            {
+                "role": "user",
+                "content": query,
+            },
+            {
+                 "role": "system",
+                 "content": SYSTEM_PROMPT
+            }
+        ]
+    )
+    response_content = chat_response.choices[0].message.content
+    return response_content
+
 
 def get_response(user_prompt, system_prompt):
+    client = ollama.Client()
     model="hf.co/hugging-quants/Llama-3.2-1B-Instruct-Q8_0-GGUF:latest"
+    # model="deepseek-r1:latest"
     response = client.generate(
          model=model, 
          prompt=user_prompt, 
@@ -21,37 +53,21 @@ available_actions = {
     "sql_engine_tool": sql_engine_tool
 }
 
-user_prompt = "How many customers do we have?"
-
-# test_response = get_response(user_prompt=user_prompt, system_prompt=system_prompt).response
-# print(f"test_response: \n ${test_response}")
-
-turn_count = 1
-max_turns = 5
-
-# create agentic loop
-while turn_count < max_turns:
-    print (f"Loop: {turn_count}")
-    print("----------------------")
-    turn_count += 1
-
-    response = get_response(user_prompt=user_prompt, system_prompt=SYSTEM_PROMPT).response
-
-    print(response)
-
+    
+@app.get("/process_query/")
+def process_query(user_prompt: str):
+    response = get_response_mistral(user_prompt)
     json_function = extract_json_from_text(response)
 
     if json_function:
-            function_name = json_function[0]['function_name']
-            function_parms = json_function[0]['function_parms']
-            if function_name not in available_actions:
-                raise Exception(f"Unknown action: {function_name}: {function_parms}")
-            print(f" -- running {function_name} {function_parms}")
-            action_function = available_actions[function_name]
-            #call the function
-            result = action_function(**function_parms)
-            function_result_message = f"Action_Response: {result}"
-            user_prompt.join(function_result_message)
-            print(function_result_message)
+        function_name = json_function[0]['action']
+        function_params = json_function[0]['action_input']
+        if function_name not in available_actions:
+            return {"error": f"Unknown action: {function_name}"}
+
+        action_function = available_actions[function_name]
+        result = action_function(**function_params)
+        function_result_message = f"Action_Response: {result}"
+        return function_result_message
     else:
-         break
+        return {"response": response}
