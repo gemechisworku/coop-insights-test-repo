@@ -1,6 +1,3 @@
-from db_handler import engine
-from sqlalchemy import text
-from tabulate import tabulate
 import pandas as pd
 
 from model_calls import get_response_mistral
