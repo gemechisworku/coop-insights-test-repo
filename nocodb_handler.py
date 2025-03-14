@@ -7,8 +7,7 @@ conn = http.client.HTTPSConnection("app.nocodb.com")
 api_key = 'uBkdyj-aTVaqzWzh9ha093CNF6l12OydGKxm-E8E'
 
 headers = { 'xc-token': api_key }
-
-conn.request("GET", "/api/v2/tables/m0eezxhvn1pgb4r/records?offset=0&limit=25&where=&viewId=vwvabzwoemhigxbg", headers=headers)
+conn.request("GET", "/api/v2/tables/msv2a9cq7gdoydx/records?offset=0&limit=25&where=&viewId=vwsxv9mxmlbi5ff0", headers=headers)
 
 res = conn.getresponse()
 data = res.read()
@@ -24,4 +23,4 @@ records = json_data.get("list", [])
 df = pd.DataFrame(records)
 
 # Display the DataFrame
-print(df)
+print(df.head())
